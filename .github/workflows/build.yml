@@ -1,11 +1,17 @@
-name: Build APK
+name: Build and Release APK
 
 on:
   push:
     branches: [master, main]
+    tags: [v*]
   pull_request:
     branches: [master, main]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 3.7.2)'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -34,8 +40,31 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: vlc-android-arm64-debug
           path: application/app/build/outputs/apk/debug/*.apk
+
+      - name: Get version name
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.version }}" != "" ]]; then
+            echo "tag=v${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: VLC Android ${{ steps.version.outputs.tag }}
+          body: |
+            Automated release for VLC Android ${{ steps.version.outputs.tag }}
+          files: application/app/build/outputs/apk/debug/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
