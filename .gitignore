@@ -61,7 +61,8 @@ captures/
 *.includes
 
 #gradle
-gradle*/
+gradle-*/
+!gradle/wrapper/gradle-wrapper.jar
 .gradle/
 build/
 vlc-android/build/
