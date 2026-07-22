@@ -21,7 +21,9 @@
  *  ***************************************************************************
  */
 apply plugin: 'com.android.library'
-apply plugin: "com.vanniktech.maven.publish"
+if (!System.getenv('CI')) {
+    apply plugin: "com.vanniktech.maven.publish"
+}
 
 def abi = project.hasProperty('vlcLibVariant') ? project.getProperty('vlcLibVariant') : 'all'
 ext {
