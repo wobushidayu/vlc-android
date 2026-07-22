@@ -31,10 +31,6 @@ ext {
 }
 android {
     namespace = 'org.videolan.medialibrary'
-    compileOptions {
-        sourceCompatibility "$rootProject.ext.targetJVM"
-        targetCompatibility "$rootProject.ext.targetJVM"
-    }
 
     defaultConfig {
         ndkVersion = rootProject.ext.toolchainNdkVersion
