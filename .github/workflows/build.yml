@@ -59,15 +59,13 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.version.outputs.tag != ''
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.version.outputs.tag }}
           name: VLC Android ${{ steps.version.outputs.tag }}
           body: |
             Automated release for VLC Android ${{ steps.version.outputs.tag }}
-          files: application/app/build/outputs/apk/debug/*.apk
+          artifacts: application/app/build/outputs/apk/debug/*.apk
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
