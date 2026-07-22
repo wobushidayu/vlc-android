@@ -55,12 +55,15 @@ ext {
     targetJVM = JavaVersion.VERSION_1_8
     targetJVMKotlin = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
 
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    // default ndkVersion in  android_plugin_version in 8.9.1: 27.0.12077973
-    // VLC 3 needs to stick to NDK21 which is the last one supporting Android API 17
-    toolchainNdkVersion = properties.getProperty('android.ndkFullVersion') ?: (vlcMajorVersion == 3 ? '21.4.7075529' : '28.2.13676358')
-    tooclchainNdkPath = properties.getProperty('android.ndkPath')
+    def localPropsFile = project.rootProject.file('local.properties')
+    def toolchainNdkVersion = vlcMajorVersion == 3 ? '21.4.7075529' : '28.2.13676358'
+    def tooclchainNdkPath = null
+    if (localPropsFile.exists()) {
+        Properties properties = new Properties()
+        properties.load(localPropsFile.newDataInputStream())
+        toolchainNdkVersion = properties.getProperty('android.ndkFullVersion') ?: toolchainNdkVersion
+        tooclchainNdkPath = properties.getProperty('android.ndkPath')
+    }
     targetSdkVersion = 36
     compileSdkVersion = 36 // Dockers: 3.0=36 / 4.0=36
     desugarLib = '2.0.4'
