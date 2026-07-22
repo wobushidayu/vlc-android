@@ -27,6 +27,7 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -147,6 +148,7 @@ import org.videolan.vlc.util.FlagSet
 import org.videolan.vlc.util.LifecycleAwareScheduler
 import org.videolan.vlc.util.Permissions
 import org.videolan.vlc.util.SchedulerCallback
+import org.videolan.vlc.util.isSchemeNetwork
 import org.videolan.vlc.util.isSchemeSupported
 import org.videolan.vlc.util.isTalkbackIsEnabled
 import org.videolan.vlc.util.launchWhenStarted
@@ -429,7 +431,15 @@ abstract class BaseBrowserFragment : MediaBrowserFragment<BrowserModel>(), IRefr
         fabPlay?.run {
             setImageResource(if (PlaylistManager.shuffling.value) R.drawable.ic_fab_shuffle else R.drawable.ic_fab_play)
             updateFab()
-            fabPlay?.contentDescription = getString(R.string.play)
+            fabPlay?.contentDescription = getString(if (PlaylistManager.shuffling.value) R.string.shuffle_on else R.string.play)
+            setOnLongClickListener {
+                val newShuffling = !PlaylistManager.shuffling.value
+                PlaybackService.serviceFlow.value?.shuffle()
+                setImageResource(if (newShuffling) R.drawable.ic_fab_shuffle else R.drawable.ic_fab_play)
+                contentDescription = getString(if (newShuffling) R.string.shuffle_on else R.string.play)
+                Toast.makeText(context, getString(if (newShuffling) R.string.shuffle_on else R.string.shuffle), Toast.LENGTH_SHORT).show()
+                true
+            }
         }
     }
 
@@ -599,9 +609,12 @@ abstract class BaseBrowserFragment : MediaBrowserFragment<BrowserModel>(), IRefr
             scheduler.scheduleAction(MSG_SHOW_ENQUEUING, 1000L)
             withContext(Dispatchers.IO) {
                 val files = if (viewModel.url?.startsWith("file") == true) viewModel.provider.browseUrl(viewModel.url!!) else viewModel.dataset.getList()
+                val isNetwork = viewModel.url?.isSchemeNetwork() == true
                 for (file in files.filterIsInstance(MediaWrapper::class.java))
                     if (file.type == MediaWrapper.TYPE_VIDEO || file.type == MediaWrapper.TYPE_AUDIO) {
-                        mediaLocations.add(getMediaWithMeta(file))
+                        // Skip getMediaWithMeta for network files to avoid blocking on MediaLibrary
+                        val media = if (isNetwork) file else getMediaWithMeta(file)
+                        mediaLocations.add(media)
                         if (mw != null && file.equals(mw))
                             positionInPlaylist = mediaLocations.size - 1
                     }
@@ -761,9 +774,11 @@ abstract class BaseBrowserFragment : MediaBrowserFragment<BrowserModel>(), IRefr
                         DefaultPlaybackAction.ADD_TO_QUEUE -> MediaUtils.appendMedia(activity, media)
                         DefaultPlaybackAction.INSERT_NEXT -> MediaUtils.insertNext(activity, media)
                         else -> {
+                            val isNetwork = viewModel.url?.isSchemeNetwork() == true
                             val media = viewModel.dataset.getList().filter { it.itemType != MediaWrapper.TYPE_DIR }
                                 .map {
-                                    getMediaWithMeta(it as MediaWrapper).apply {
+                                    val m = if (isNetwork) it as MediaWrapper else getMediaWithMeta(it as MediaWrapper)
+                                    m.apply {
                                         if (Settings.getInstance(requireActivity()).getBoolean(KEY_QUICK_PLAY_DEFAULT, false))
                                             addFlags(MediaWrapper.MEDIA_NO_PARSE)
                                     }

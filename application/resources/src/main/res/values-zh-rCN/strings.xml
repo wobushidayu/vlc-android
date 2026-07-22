@@ -231,6 +231,7 @@
     <string name="server_share_hint">网络共享名称 (或 IP 地址)</string>
     <string name="server_folder_hint">文件夹路径 (可选)</string>
     <string name="server_username_hint">用户名</string>
+    <string name="server_password_hint">密码</string>
     <string name="server_servername_hint">服务器名称 (方便识别)</string>
     <string name="server_port">端口: </string>
     <string name="login">登录名</string>
